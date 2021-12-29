@@ -1,0 +1,62 @@
+[
+    {
+        "date": "01-12-2021",
+        "systolic": "130",
+        "diasatolic": "84",
+        "pulse":"77"
+    },
+    {
+        "date": "02-12-2021",
+        "systolic": "128",
+        "diasatolic": "80",
+        "pulse":"90"
+    },
+    {
+        "date": "03-12-2021",
+        "systolic": "130",
+        "diasatolic": "84",
+        "pulse":"77"
+    },
+    {
+        "date": "04-12-2021",
+        "systolic": "134",
+        "diasatolic": "77",
+        "pulse":"68"
+    },
+    {
+        "date": "05-12-2021",
+        "systolic": "122",
+        "diasatolic": "70",
+        "pulse":"80"
+    },
+    {
+        "date": "06-12-2021",
+        "systolic": "120",
+        "diasatolic": "70",
+        "pulse":"80"
+    },
+    {
+        "date": "07-12-2021",
+        "systolic": "130",
+        "diasatolic": "84",
+        "pulse":"77"
+    },
+    {
+        "date": "08-12-2021",
+        "systolic": "122",
+        "diasatolic": "65",
+        "pulse":"90"
+    },
+    {
+        "date": "09-12-2021",
+        "systolic": "120",
+        "diasatolic": "70",
+        "pulse":"87"
+    },
+    {
+        "date": "10-12-2021",
+        "systolic": "131",
+        "diasatolic": "22",
+        "pulse":"90"
+    }
+]
