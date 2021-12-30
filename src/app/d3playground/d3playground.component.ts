@@ -140,7 +140,7 @@ export class D3playgroundComponent implements OnInit {
       .style("padding", padding)
       .style("margin", margin)
       .classed("svg-content", true);
-      var aspect = width / height;
+    var aspect = width / height;
     // d3.select(window)
     //   .on("resize", function () {
     //     var targetWidth = (svg.node() as any).getBoundingClientRect().width;
@@ -183,7 +183,7 @@ export class D3playgroundComponent implements OnInit {
     const yaxis = d3.axisLeft(yScale)
       .ticks(3)
 
-      //Axis
+    //Axis
     const xaxis = d3.axisBottom(xScale)
       .ticks(d3.timeDay.every(1))
       .tickFormat(d3.timeFormat('%b %d'))
@@ -226,24 +226,36 @@ export class D3playgroundComponent implements OnInit {
         return line(d.values);
       })
 
-      path.nodes().forEach(element => {
-        const totalLength = element.getTotalLength();
-        console.log(totalLength)
-        d3.select(element)
-        .attr("stroke-dasharray", `${totalLength} ${totalLength}` )
+
+
+    //animate paths
+    path.nodes().forEach(element => {
+      const totalLength = element.getTotalLength();
+      console.log(totalLength)
+      d3.select(element)
+        .attr("stroke-dasharray", `${totalLength} ${totalLength}`)
         .attr("stroke-dashoffset", `${totalLength}`)
         .transition()
-         .duration(1000)
-         .ease(d3.easeLinear)
-         .attr("stroke-dashoffset", 0);
-      });
-      // path[0]
-      // var totalLength = [path[0][0].getTotalLength(), path[0][1].getTotalLength()];
+        .duration(1000)
+        .ease(d3.easeSinIn)
+        .attr("stroke-dashoffset", 0);
+    });
 
-      // console.log(totalLength);
-      svg.append("line")
+    //Add points
+    slices.forEach((el) => {
+      console.log(el)
+      svg.selectAll('circles')
+        .data(el.values)
+        .enter()
+        .append('circle')
+        .attr('cy', lineY)
+        .attr('cx', lineX)
+        .attr('r', 2);
+    })
+
+    svg.append("line")
       .attr('class', 'lowrange')
-      .attr('x1',0)
+      .attr('x1', 0)
       .attr('x2', width)
       .attr('y1', 85)
       .attr('y2', 85);
