@@ -4,6 +4,13 @@
     }
 }
 
+.lowrange {
+    fill:none;
+    stroke-width: 1;
+    stroke: #2b2929;
+    stroke-dasharray: 6;
+}
+
 .axis line{
     stroke: #706f6f;
     stroke-width: 0.5;

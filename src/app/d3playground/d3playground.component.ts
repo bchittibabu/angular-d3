@@ -208,7 +208,7 @@ export class D3playgroundComponent implements OnInit {
     const line = d3.line()
       .x(lineX)
       .y(lineY)
-      .curve(d3.curveCatmullRom);
+      .curve(d3.curveCatmullRom.alpha(0.5));
 
     let id = 0;
     const ids = function () {
@@ -219,13 +219,34 @@ export class D3playgroundComponent implements OnInit {
       .enter()
       .append("g");
 
-    lines.append("path")
+    const path = lines.append("path")
       .attr("class", ids)
-      // .attr("style", "fill: none; stroke: #ed3700")
       .attr("d", (d) => {
         console.log(d)
         return line(d.values);
+      })
+
+      path.nodes().forEach(element => {
+        const totalLength = element.getTotalLength();
+        console.log(totalLength)
+        d3.select(element)
+        .attr("stroke-dasharray", `${totalLength} ${totalLength}` )
+        .attr("stroke-dashoffset", `${totalLength}`)
+        .transition()
+         .duration(1000)
+         .ease(d3.easeLinear)
+         .attr("stroke-dashoffset", 0);
       });
+      // path[0]
+      // var totalLength = [path[0][0].getTotalLength(), path[0][1].getTotalLength()];
+
+      // console.log(totalLength);
+      svg.append("line")
+      .attr('class', 'lowrange')
+      .attr('x1',0)
+      .attr('x2', width)
+      .attr('y1', 85)
+      .attr('y2', 85);
 
     lines.append("text")
       .attr("class", "label")
@@ -242,4 +263,6 @@ export class D3playgroundComponent implements OnInit {
       .attr("x", 5)
       .text(function (d) { return d.id; });
   }
+
+
 }
