@@ -23,20 +23,27 @@
     font-family: Georgia;
     font-size: 120%;
     }
-    
+
 path.line-0 {
     fill: none;
-    stroke: #ed3700;
+        stroke: rgb(169, 208, 69);
+    stroke-width: 2;
+    stroke-linejoin: round;
+    stroke-linecap: round;
     }
     
     path.line-1 {
     fill: none;
-    stroke: #2b2929;
-    stroke-dasharray: 2;
+    stroke: rgb(169, 208, 69);
+    stroke-width: 2;
+    stroke-linejoin: round;
+    stroke-linecap: round;
     }
     
     path.line-2 {
     fill: none;
-    stroke: #9c9c9c;
-    stroke-dasharray: 6;
+    stroke: rgb(0, 179, 226);
+    stroke-width: 2;
+    stroke-linejoin: round;
+    stroke-linecap: round;
     }

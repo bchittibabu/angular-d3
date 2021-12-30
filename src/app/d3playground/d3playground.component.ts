@@ -129,6 +129,7 @@ export class D3playgroundComponent implements OnInit {
     const padding = 25;
     const adj = 30;
 
+    //Creating SVG
     const svg = d3.select('#d3_demo')
       .attr("preserveAspectRatio", "xMinYMin meet")
       .attr("viewBox", "-"
@@ -139,28 +140,34 @@ export class D3playgroundComponent implements OnInit {
       .style("padding", padding)
       .style("margin", margin)
       .classed("svg-content", true);
-
+      var aspect = width / height;
+    // d3.select(window)
+    //   .on("resize", function () {
+    //     var targetWidth = (svg.node() as any).getBoundingClientRect().width;
+    //     svg.attr("width", targetWidth);
+    //     svg.attr("height", targetWidth / aspect);
+    //   });
+    // Data
     const parseTime = d3.timeParse("%d-%m-%Y");
-    const dataArr = bpData.default;
+    const dataArr: BP[] = bpData.default;
     const slices = [];
-    slices.push({ id: "systolic", values: []})
-    slices.push({ id: "diasatolic", values: []})
-    slices.push({ id: "pulse", values: []})
-
+    const keys = Object.keys(dataArr[0]);
+    for (const key of keys) {
+      if (key !== 'date') {
+        slices.push({ id: key, values: [] })
+      }
+    }
 
     dataArr.map((d) => {
       d.parsedDate = parseTime(d.date);
-      d.measurements = [+d.systolic, +d.diasatolic, +d.pulse];
-      slices[0].values.push({ date: d.parsedDate, measurement: +d.systolic});
-      slices[1].values.push({ date: d.parsedDate, measurement: +d.diasatolic});
-      slices[2].values.push({ date: d.parsedDate, measurement: +d.pulse});
+      slices[0].values.push({ date: d.parsedDate, measurement: +d.systolic });
+      slices[1].values.push({ date: d.parsedDate, measurement: +d.diasatolic });
+      slices[2].values.push({ date: d.parsedDate, measurement: +d.pulse });
 
     }
     );
-    console.log(dataArr)
-    console.log(slices)
 
-
+    //Scales
     const xScale = d3.scaleTime().range([0, width]);
     const yScale = d3.scaleLinear().range([height, 0]);
 
@@ -172,14 +179,14 @@ export class D3playgroundComponent implements OnInit {
       return +(d as any).systolic;
     })
     xScale.domain(xExtent as any);
-    yScale.domain([0, yMax as any]);
+    yScale.domain([50, yMax as any]);
     const yaxis = d3.axisLeft(yScale)
       .ticks(3)
 
+      //Axis
     const xaxis = d3.axisBottom(xScale)
       .ticks(d3.timeDay.every(1))
       .tickFormat(d3.timeFormat('%b %d'))
-
 
     svg.append("g")
       .attr("class", "axis")
@@ -190,6 +197,7 @@ export class D3playgroundComponent implements OnInit {
       .attr("class", "axis")
       .call(yaxis);
 
+    // Lines
     const lineX = (d) => {
       return xScale(d.date);
     };
@@ -198,36 +206,40 @@ export class D3playgroundComponent implements OnInit {
       return yScale(d.measurement);
     };
     const line = d3.line()
-    .x(lineX)
-    .y(lineY)
+      .x(lineX)
+      .y(lineY)
+      .curve(d3.curveCatmullRom);
 
     let id = 0;
     const ids = function () {
-        return "line-"+id++;
-    }  
+      return "line-" + id++;
+    }
     const lines = svg.selectAll("lines")
-    .data(slices)
-    .enter()
-    .append("g");
+      .data(slices)
+      .enter()
+      .append("g");
 
     lines.append("path")
-    .attr("class", ids)
-    // .attr("style", "fill: none; stroke: #ed3700")
-    .attr("d", (d) => { 
-      console.log(d)
-      return line(d.values); 
-    });
+      .attr("class", ids)
+      // .attr("style", "fill: none; stroke: #ed3700")
+      .attr("d", (d) => {
+        console.log(d)
+        return line(d.values);
+      });
 
     lines.append("text")
-    .attr("class","label")
-    .datum(function(d) {
+      .attr("class", "label")
+      .datum(function (d) {
         return {
-            id: d.id,
-            value: d.values[d.values.length - 1]}; })
-    .attr("transform", function(d) {
-            return "translate(" + (xScale(d.value.date))  
-            + "," + (yScale(d.value.measurement) + 5 ) + ")"; })
-    .attr("x", 5)
-    .text(function(d) { return d.id; });
+          id: d.id,
+          value: d.values[d.values.length - 1]
+        };
+      })
+      .attr("transform", function (d) {
+        return "translate(" + (xScale(d.value.date))
+          + "," + (yScale(d.value.measurement) + 5) + ")";
+      })
+      .attr("x", 5)
+      .text(function (d) { return d.id; });
   }
 }
