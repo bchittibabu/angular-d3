@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ViewEncapsulation } from '@angular/core';
 import * as d3 from "d3";
 import * as bpData from "../../assets/bp.json"
 
@@ -12,7 +12,8 @@ type BP = {
 @Component({
   selector: 'app-d3playground',
   templateUrl: './d3playground.component.html',
-  styleUrls: ['./d3playground.component.scss']
+  styleUrls: ['./d3playground.component.scss'],
+  encapsulation: ViewEncapsulation.None
 })
 export class D3playgroundComponent implements OnInit {
 
@@ -124,8 +125,8 @@ export class D3playgroundComponent implements OnInit {
   plotXYLineChart() {
     const width = 960;
     const height = 500;
-    const margin = 5;
-    const padding = 5;
+    const margin = 25;
+    const padding = 25;
     const adj = 30;
 
     const svg = d3.select('#d3_demo')
@@ -141,11 +142,24 @@ export class D3playgroundComponent implements OnInit {
 
     const parseTime = d3.timeParse("%d-%m-%Y");
     const dataArr = bpData.default;
+    const slices = [];
+    slices.push({ id: "systolic", values: []})
+    slices.push({ id: "diasatolic", values: []})
+    slices.push({ id: "pulse", values: []})
+
 
     dataArr.map((d) => {
       d.parsedDate = parseTime(d.date);
+      d.measurements = [+d.systolic, +d.diasatolic, +d.pulse];
+      slices[0].values.push({ date: d.parsedDate, measurement: +d.systolic});
+      slices[1].values.push({ date: d.parsedDate, measurement: +d.diasatolic});
+      slices[2].values.push({ date: d.parsedDate, measurement: +d.pulse});
+
     }
     );
+    console.log(dataArr)
+    console.log(slices)
+
 
     const xScale = d3.scaleTime().range([0, width]);
     const yScale = d3.scaleLinear().range([height, 0]);
@@ -155,7 +169,7 @@ export class D3playgroundComponent implements OnInit {
     })
 
     const yMax = d3.max(dataArr, (d) => {
-      return (d as any).systolic;
+      return +(d as any).systolic;
     })
     xScale.domain(xExtent as any);
     yScale.domain([0, yMax as any]);
@@ -175,5 +189,45 @@ export class D3playgroundComponent implements OnInit {
     svg.append("g")
       .attr("class", "axis")
       .call(yaxis);
+
+    const lineX = (d) => {
+      return xScale(d.date);
+    };
+
+    const lineY = (d) => {
+      return yScale(d.measurement);
+    };
+    const line = d3.line()
+    .x(lineX)
+    .y(lineY)
+
+    let id = 0;
+    const ids = function () {
+        return "line-"+id++;
+    }  
+    const lines = svg.selectAll("lines")
+    .data(slices)
+    .enter()
+    .append("g");
+
+    lines.append("path")
+    .attr("class", ids)
+    // .attr("style", "fill: none; stroke: #ed3700")
+    .attr("d", (d) => { 
+      console.log(d)
+      return line(d.values); 
+    });
+
+    lines.append("text")
+    .attr("class","label")
+    .datum(function(d) {
+        return {
+            id: d.id,
+            value: d.values[d.values.length - 1]}; })
+    .attr("transform", function(d) {
+            return "translate(" + (xScale(d.value.date))  
+            + "," + (yScale(d.value.measurement) + 5 ) + ")"; })
+    .attr("x", 5)
+    .text(function(d) { return d.id; });
   }
 }
