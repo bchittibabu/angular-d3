@@ -211,8 +211,8 @@ export class D3playgroundComponent implements OnInit {
       .curve(d3.curveCatmullRom.alpha(0.5));
 
     let id = 0;
-    const ids = function () {
-      return "line-" + id++;
+    const ids = function (type: string) {
+      return `line-` + id++;
     }
     const lines = svg.selectAll("lines")
       .data(slices)
@@ -226,7 +226,7 @@ export class D3playgroundComponent implements OnInit {
         return line(d.values);
       })
 
-
+    id = 0
 
     //animate paths
     path.nodes().forEach(element => {
@@ -237,17 +237,19 @@ export class D3playgroundComponent implements OnInit {
         .attr("stroke-dashoffset", `${totalLength}`)
         .transition()
         .duration(1000)
-        .ease(d3.easeSinIn)
+        .ease(d3.easeSinOut)
         .attr("stroke-dashoffset", 0);
     });
 
     //Add points
     slices.forEach((el) => {
       console.log(el)
+      const circleClass = ids('circle');
       svg.selectAll('circles')
         .data(el.values)
         .enter()
         .append('circle')
+        .attr('class', circleClass)
         .attr('cy', lineY)
         .attr('cx', lineX)
         .attr('r', 2);
