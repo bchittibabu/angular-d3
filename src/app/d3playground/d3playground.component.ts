@@ -1,4 +1,4 @@
-import { Component, OnInit, ViewEncapsulation } from '@angular/core';
+import { Component, ElementRef, OnInit, ViewChild, ViewEncapsulation } from '@angular/core';
 import * as d3 from "d3";
 import * as moment from 'moment';
 import * as bpData from "../../assets/bp.json"
@@ -19,7 +19,25 @@ type BP = {
 })
 export class D3playgroundComponent implements OnInit {
 
-  private graph;
+  private graph = {
+		x: {
+			range: [],
+			diff: null,
+			domain: [],
+			scale: null
+		},
+		y: {
+			range: [],
+			diff: null,
+			domain: [],
+			scale: null
+		},
+		g: null,
+		line: null,
+		focus: null,
+		rect: null
+	};
+  @ViewChild('graphBody') private graphBody: ElementRef;
 
   private bisectDate;
   private xScale;
@@ -34,8 +52,12 @@ export class D3playgroundComponent implements OnInit {
 
   ngOnInit(): void {
 
-    this.plotXYLineChart();
+   
 
+  }
+
+  ngAfterViewInit() {
+    this.plotXYLineChart();
   }
 
   renderFruits() {
@@ -136,14 +158,19 @@ export class D3playgroundComponent implements OnInit {
   }
 
   plotXYLineChart() {
-    const width = 960;
-    const height = 500;
+    let width = 960;
+    let height = 500;
     const margin = 25;
     const padding = 25;
     const adj = 30;
-
+    const graphSize = {
+      height: this.graphBody.nativeElement.offsetHeight,
+      width: this.graphBody.nativeElement.offsetWidth
+    };
     //Creating SVG
-    this.graph = d3.select('#d3_demo')
+    const svg = d3.select(this.graphBody.nativeElement).append('svg')
+       // .attr('width', width)
+			 //.attr('height',height)
       .attr("preserveAspectRatio", "xMinYMin meet")
       .attr("viewBox", "-"
         + adj + " -"
@@ -151,8 +178,10 @@ export class D3playgroundComponent implements OnInit {
         + (width + adj * 3) + " "
         + (height + adj * 3))
       .style("padding", padding)
-      .style("margin", margin)
-      .classed("svg-content", true);
+      .style("margin", margin);
+      // .classed("svg-content", true);
+    // width = graphSize.width;
+    // height = graphSize.height;
     var aspect = width / height;
     // d3.select(window)
     //   .on("resize", function () {
@@ -175,8 +204,8 @@ export class D3playgroundComponent implements OnInit {
       d.parsedDate = parseTime(d.date);
       d.moment = moment(d.parsedDate)
       this.slices[0].values.push({ date: d.parsedDate, measurement: +d.systolic, moment: moment(d.parsedDate) });
-      this.slices[1].values.push({ date: d.parsedDate, measurement: +d.diasatolic, moment: moment(d.parsedDate)  });
-      this.slices[2].values.push({ date: d.parsedDate, measurement: +d.pulse, moment: moment(d.parsedDate)  });
+      this.slices[1].values.push({ date: d.parsedDate, measurement: +d.diasatolic, moment: moment(d.parsedDate) });
+      this.slices[2].values.push({ date: d.parsedDate, measurement: +d.pulse, moment: moment(d.parsedDate) });
 
     }
     );
@@ -217,19 +246,31 @@ export class D3playgroundComponent implements OnInit {
     const yaxis = d3.axisLeft(this.yScale)
       .ticks(3)
 
+    this.graph.x = {
+      range: xRange,
+      diff: xDiff,
+      domain: this.xDomain,
+      scale: this.xScale
+    };
+    this.graph.y = {
+      range: yRange,
+      diff: yDiff,
+      domain: this.yDomain,
+      scale: this.yScale
+    };
     //Axis
     const xaxis = d3.axisBottom(this.xScale)
       .ticks(d3.timeDay.every(1))
       .tickFormat(d3.timeFormat('%b %d'))
+    this.graph.g = svg.append('g');
+    // this.graph.g.append("g")
+    //   .attr("class", "axis")
+    //   .attr("transform", "translate(0," + height + ")")
+    //   .call(xaxis);
 
-    this.graph.append("g")
-      .attr("class", "axis")
-      .attr("transform", "translate(0," + height + ")")
-      .call(xaxis);
-
-    this.graph.append("g")
-      .attr("class", "axis")
-      .call(yaxis);
+    // this.graph.g.append("g")
+    //   .attr("class", "axis")
+    //   .call(yaxis);
 
     // Lines
     const lineX = (d) => {
@@ -248,7 +289,7 @@ export class D3playgroundComponent implements OnInit {
     const ids = function (type: string) {
       return `line-` + id++;
     }
-    const lines = this.graph.selectAll("lines")
+    const lines = this.graph.g.selectAll("lines")
       .data(this.slices)
       .enter()
       .append("g");
@@ -279,7 +320,7 @@ export class D3playgroundComponent implements OnInit {
     this.slices.forEach((el) => {
       console.log(el)
       const circleClass = ids('circle');
-      this.graph.selectAll('circles')
+      this.graph.g.selectAll('circles')
         .data(el.values)
         .enter()
         .append('circle')
@@ -290,13 +331,34 @@ export class D3playgroundComponent implements OnInit {
         .transition().duration(1000)
         .style('opacity', 1);;
     });
+
+    this.graph.focus =  this.graph.g.append('g')
+    .style('display', 'none');
+    this.graph.focus.append('line')
+    .attr('id', 'focusLineX')
+    .attr('shape-rendering', 'crispEdges')
+    .attr('class', 'focus-line');
+    
+    for( let i = 0; i < 3; i++){
+      this.graph.focus.append('circle')
+      .attr('id', 'focusCircle'+i)
+      .attr('r', 3)
+      .attr('class', 'circle focus-circle');
+    }
+
+    this.graph.focus.append('circle')
+    .attr('id', 'metricFocusCircle')
+    .attr('r', 3)
+    .attr('class', 'circle metric-focus-circle')
+    .style('display', 'none'); 
+
     let tooltipLabel = 'DATE: ';
-    this.graph.append('text')
+    this.graph.focus.append('text')
     .attr('y', -15)
     .attr('dy', '.31em')
     .attr('id', 'tooltip-label')
     .text(tooltipLabel);
-    this.graph.append('text')
+    this.graph.focus.append('text')
     .attr('y', -15)
     .attr('dy', '.31em')
     .attr('id', 'tooltip');
@@ -309,19 +371,19 @@ export class D3playgroundComponent implements OnInit {
     //   this.onFocus(d3.mouse(this))
     // };
 
-    this.graph.append("line")
-      .attr('class', 'lowrange')
-      .attr('x1', 0)
-      .attr('x2', width)
-      .attr('y1', 85)
-      .attr('y2', 85);
+    // this.graph.append("line")
+    //   .attr('class', 'lowrange')
+    //   .attr('x1', 0)
+    //   .attr('x2', width)
+    //   .attr('y1', 85)
+    //   .attr('y2', 85);
 
       const startFocus = function() {
 				//that.graphRefreshing = false;
 				that.onFocus(d3.mouse(this));
 			};
 
-			this.graph.append('rect')
+			this.graph.rect = this.graph.g.append('rect')
 				.attr('class', 'overlay')
 				.attr('width', width)
 				.attr('height', height)
@@ -364,15 +426,18 @@ export class D3playgroundComponent implements OnInit {
 		const dataIndex = weightDateAndIndex[1];
 
 		if (data) {
-			this.graph.style('display', 'initial');
+			this.graph.focus.style('display', 'initial');
 			const x = this.xScale(data.moment);
-			const y = this.yScale(data.pusle);
+			const ypulse = this.yScale(data.pulse);
+			const ysystolic = this.yScale(data.systolic);
+			const ydiastolic = this.yScale(data.diasatolic);
+
 			let tooltipX = x;
 			const timestamp = this.dataArr[dataIndex].moment;
 			this.outputFocusData(this.dataArr[dataIndex][2]);
 
-			const tooltipLabel = this.graph.select('#tooltip-label');
-			const tooltip = this.graph.select('#tooltip');
+			const tooltipLabel = this.graph.focus.select('#tooltip-label');
+			const tooltip = this.graph.focus.select('#tooltip');
 
 			if (this.timespan === 'week' || this.timespan === 'month') {
 				tooltip.text(moment(timestamp).format('MM-DD-YY'));
@@ -389,11 +454,19 @@ export class D3playgroundComponent implements OnInit {
 				tooltipX -= totalWidth;
 			}
 
-			this.graph.select('#focusCircle')
+			this.graph.focus.select('#focusCircle0')
 				.attr('cx', x)
-				.attr('cy', y)
+				.attr('cy', ypulse)
 				.style('display', 'initial');
-			this.graph.select('#focusLineX')
+        this.graph.focus.select('#focusCircle1')
+				.attr('cx', x)
+				.attr('cy', ysystolic)
+				.style('display', 'initial');			
+        this.graph.focus.select('#focusCircle2')
+				.attr('cx', x)
+				.attr('cy', ydiastolic)
+				.style('display', 'initial');
+			this.graph.focus.select('#focusLineX')
 				.attr('x1', x).attr('y1', this.yScale(this.yDomain[0]))
 				.attr('x2', x).attr('y2', this.yScale(this.yDomain[1]))
 				.style('display', 'initial');

@@ -72,3 +72,32 @@ path.line-0 {
         pointer-events: all;
         stroke: none;
     }
+
+    .focus-line {
+        fill: none;
+        stroke-width: 2px;
+        stroke: lightgrey;
+        opacity: .5;
+    }
+
+    .focus-circle, .focus-circle1, .focus-circle2 {
+        fill: steelblue;
+    }
+
+    .circle {
+        fill: white;
+        stroke-width: 2px;
+        stroke: steelblue;
+
+      
+    }
+
+    #tooltip-label {
+        fill: lightgray;
+    }
+
+    #tooltip, #tooltip-label {
+        fill: lightgray;
+        font-size: 1.3rem;
+        font-weight: 400;
+    }
