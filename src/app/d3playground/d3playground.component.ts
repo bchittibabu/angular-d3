@@ -1,5 +1,6 @@
 import { Component, OnInit, ViewEncapsulation } from '@angular/core';
 import * as d3 from "d3";
+import * as moment from 'moment';
 import * as bpData from "../../assets/bp.json"
 
 type BP = {
@@ -7,7 +8,8 @@ type BP = {
   systolic: number,
   diasatolic: number,
   pulse: number,
-  parsedDate?: Date
+  parsedDate?: Date,
+  moment?: any
 };
 @Component({
   selector: 'app-d3playground',
@@ -17,6 +19,17 @@ type BP = {
 })
 export class D3playgroundComponent implements OnInit {
 
+  private graph;
+
+  private bisectDate;
+  private xScale;
+	private yScale;
+  mouseDate: any;
+  timespan: string = 'week';
+  xDomain: any[];
+  yDomain: number[];
+  slices: any[];
+  dataArr: BP[];
   constructor() { }
 
   ngOnInit(): void {
@@ -130,7 +143,7 @@ export class D3playgroundComponent implements OnInit {
     const adj = 30;
 
     //Creating SVG
-    const svg = d3.select('#d3_demo')
+    this.graph = d3.select('#d3_demo')
       .attr("preserveAspectRatio", "xMinYMin meet")
       .attr("viewBox", "-"
         + adj + " -"
@@ -149,61 +162,82 @@ export class D3playgroundComponent implements OnInit {
     //   });
     // Data
     const parseTime = d3.timeParse("%d-%m-%Y");
-    const dataArr: BP[] = bpData.default;
-    const slices = [];
-    const keys = Object.keys(dataArr[0]);
+    this.dataArr = bpData.default;
+    this.slices = [];
+    const keys = Object.keys(this.dataArr[0]);
     for (const key of keys) {
       if (key !== 'date') {
-        slices.push({ id: key, values: [] })
+        this.slices.push({ id: key, values: [] })
       }
     }
 
-    dataArr.map((d) => {
+    this.dataArr.map((d) => {
       d.parsedDate = parseTime(d.date);
-      slices[0].values.push({ date: d.parsedDate, measurement: +d.systolic });
-      slices[1].values.push({ date: d.parsedDate, measurement: +d.diasatolic });
-      slices[2].values.push({ date: d.parsedDate, measurement: +d.pulse });
+      d.moment = moment(d.parsedDate)
+      this.slices[0].values.push({ date: d.parsedDate, measurement: +d.systolic, moment: moment(d.parsedDate) });
+      this.slices[1].values.push({ date: d.parsedDate, measurement: +d.diasatolic, moment: moment(d.parsedDate)  });
+      this.slices[2].values.push({ date: d.parsedDate, measurement: +d.pulse, moment: moment(d.parsedDate)  });
 
     }
     );
 
     //Scales
-    const xScale = d3.scaleTime().range([0, width]);
-    const yScale = d3.scaleLinear().range([height, 0]);
 
-    const xExtent = d3.extent(dataArr, (d) => {
-      return (d as any).parsedDate;
+
+    const xRange = d3.extent(this.dataArr, (d) => {
+      return (d as any).moment;
     })
 
-    const yMax = d3.max(dataArr, (d) => {
+    const xDiff = (xRange[1] - xRange[0]) * 0.1;
+
+
+    const yMax = d3.max(this.dataArr, (d) => {
       return +(d as any).systolic;
     })
-    xScale.domain(xExtent as any);
-    yScale.domain([50, yMax as any]);
-    const yaxis = d3.axisLeft(yScale)
+
+    const yMin = d3.min( this.dataArr, (d) => {
+      return +(d.diasatolic)
+    });
+
+    const yMinMx = [yMin, yMax];
+
+    const yRange = [
+      Math.floor( (yMinMx[0] - 1)/10 )* 10,
+      Math.floor( (yMinMx[1] /10) * 10+ 10)
+    ];
+    const yDiff = (yRange[1] - yRange[0]) * 0.1;
+    this.xScale = d3.scaleTime().range([0, width]);
+    this.yScale = d3.scaleLinear().range([height, 0]);
+
+    this.xDomain = xRange;
+		this.yDomain = [yRange[0] - yDiff, yRange[1] + yDiff];
+
+    this.xScale.domain(this.xDomain as any);
+    this.yScale.domain(this.yDomain);
+    const yaxis = d3.axisLeft(this.yScale)
       .ticks(3)
 
     //Axis
-    const xaxis = d3.axisBottom(xScale)
+    const xaxis = d3.axisBottom(this.xScale)
       .ticks(d3.timeDay.every(1))
       .tickFormat(d3.timeFormat('%b %d'))
 
-    svg.append("g")
+    this.graph.append("g")
       .attr("class", "axis")
       .attr("transform", "translate(0," + height + ")")
       .call(xaxis);
 
-    svg.append("g")
+    this.graph.append("g")
       .attr("class", "axis")
       .call(yaxis);
 
     // Lines
     const lineX = (d) => {
-      return xScale(d.date);
+      return this.xScale(d.date);
     };
 
     const lineY = (d) => {
-      return yScale(d.measurement);
+      return this.yScale(d.measurement);
     };
     const line = d3.line()
       .x(lineX)
@@ -214,8 +248,8 @@ export class D3playgroundComponent implements OnInit {
     const ids = function (type: string) {
       return `line-` + id++;
     }
-    const lines = svg.selectAll("lines")
-      .data(slices)
+    const lines = this.graph.selectAll("lines")
+      .data(this.slices)
       .enter()
       .append("g");
 
@@ -242,25 +276,59 @@ export class D3playgroundComponent implements OnInit {
     });
 
     //Add points
-    slices.forEach((el) => {
+    this.slices.forEach((el) => {
       console.log(el)
       const circleClass = ids('circle');
-      svg.selectAll('circles')
+      this.graph.selectAll('circles')
         .data(el.values)
         .enter()
         .append('circle')
         .attr('class', circleClass)
         .attr('cy', lineY)
         .attr('cx', lineX)
-        .attr('r', 2);
-    })
+        .attr('r', 2).style('opacity', 0)
+        .transition().duration(1000)
+        .style('opacity', 1);;
+    });
+    let tooltipLabel = 'DATE: ';
+    this.graph.append('text')
+    .attr('y', -15)
+    .attr('dy', '.31em')
+    .attr('id', 'tooltip-label')
+    .text(tooltipLabel);
+    this.graph.append('text')
+    .attr('y', -15)
+    .attr('dy', '.31em')
+    .attr('id', 'tooltip');
+    this.bisectDate = d3.bisector((d) => {
+      return d.moment;
+    }).left;
 
-    svg.append("line")
+    const that = this;
+    // const startFocus = function() {
+    //   this.onFocus(d3.mouse(this))
+    // };
+
+    this.graph.append("line")
       .attr('class', 'lowrange')
       .attr('x1', 0)
       .attr('x2', width)
       .attr('y1', 85)
       .attr('y2', 85);
+
+      const startFocus = function() {
+				//that.graphRefreshing = false;
+				that.onFocus(d3.mouse(this));
+			};
+
+			this.graph.append('rect')
+				.attr('class', 'overlay')
+				.attr('width', width)
+				.attr('height', height)
+				.on('mousedown', startFocus)
+				.on('mousemove', startFocus)
+				.on('touchmove', startFocus)
+				.on('touchstart', startFocus);
 
     lines.append("text")
       .attr("class", "label")
@@ -271,12 +339,96 @@ export class D3playgroundComponent implements OnInit {
         };
       })
       .attr("transform", function (d) {
-        return "translate(" + (xScale(d.value.date))
-          + "," + (yScale(d.value.measurement) + 5) + ")";
+        return "translate(" + (this.xScale(d.value.date))
+          + "," + (this.yScale(d.value.measurement) + 5) + ")";
       })
       .attr("x", 5)
       .text(function (d) { return d.id; });
   }
 
+  public outputFocusData(i) {
+		// this.events.publish('graph:getFocusData', i);
+	}
+
+  public onFocus(mouseEvent) {
+		// Get mouse position data
+		if (mouseEvent) {
+			this.mouseDate = this.xScale.invert(mouseEvent[0]);
+		} else if (!this.mouseDate) {
+			// Prevent null event error
+			return;
+		}
+		// Get nearest date/index
+		const weightDateAndIndex = this.getPointDateAndIndex(this.dataArr, this.mouseDate);
+		const data = weightDateAndIndex[0];
+		const dataIndex = weightDateAndIndex[1];
+
+		if (data) {
+			this.graph.style('display', 'initial');
+			const x = this.xScale(data.moment);
+			const y = this.yScale(data.pusle);
+			let tooltipX = x;
+			const timestamp = this.dataArr[dataIndex].moment;
+			this.outputFocusData(this.dataArr[dataIndex][2]);
+
+			const tooltipLabel = this.graph.select('#tooltip-label');
+			const tooltip = this.graph.select('#tooltip');
+
+			if (this.timespan === 'week' || this.timespan === 'month') {
+				tooltip.text(moment(timestamp).format('MM-DD-YY'));
+			} else if (this.timespan === 'year') {
+				tooltip.text(moment(timestamp).format('MMMM'));
+			} else if (this.timespan === 'total') {
+				tooltip.text(moment(timestamp).format('MMM. YYYY'));
+			}
+
+			const labelWidth = tooltipLabel.node().getBBox().width + 5;
+			const totalWidth = labelWidth + (tooltip.node().getBBox().width > 0 ? tooltip.node().getBBox().width : 60);
+
+			if (tooltipX > this.xScale(this.dataArr[this.dataArr.length - 1].moment) - totalWidth - 20) {
+				tooltipX -= totalWidth;
+			}
+
+			this.graph.select('#focusCircle')
+				.attr('cx', x)
+				.attr('cy', y)
+				.style('display', 'initial');
+			this.graph.select('#focusLineX')
+				.attr('x1', x).attr('y1', this.yScale(this.yDomain[0]))
+				.attr('x2', x).attr('y2', this.yScale(this.yDomain[1]))
+				.style('display', 'initial');
+			tooltipLabel.attr('x', tooltipX)
+				.attr('y1', this.yScale(this.yDomain[0]))
+				.style('display', 'initial');
+			tooltip.attr('x', tooltipX + labelWidth)
+				.attr('y1', this.yScale(this.yDomain[0]))
+				.style('display', 'initial');
+		}
+
+	}
+
+	private getPointDateAndIndex(momentArray, mouseDate) {
+		// Returns the index of the mouseDate if it was to be inserted into the array.
+		// This will always be to the right of the click/touch
+		const index = this.bisectDate(momentArray, mouseDate);
+
+		// Get the dates to the left and right of the click/touch
+		const min: BP = momentArray[index - 1];
+		const max: BP = momentArray[index];
+
+		// Find the closest date to the mouseDate
+		let date;
+		let dateIndex;
+		if (min && max) {
+			date = mouseDate - min.moment > max.moment - mouseDate ? max : min;
+			dateIndex = mouseDate - min.moment > max.moment - mouseDate ? index : index - 1;
+		} else {
+			// If either is null, assign the other by default. This happens when clicking/touching the sides
+			date = max ? max : min;
+			dateIndex = max ? index : index - 1;
+		}
+
+		return [date, dateIndex];
+	}
 
 }

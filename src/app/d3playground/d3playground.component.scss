@@ -66,3 +66,9 @@ path.line-0 {
     circle.line-2{
         fill: rgb(0, 179, 226);
     }
+
+    .overlay {
+        fill: none;
+        pointer-events: all;
+        stroke: none;
+    }
